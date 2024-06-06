@@ -1,0 +1,111 @@
+---
+author: "Brenden Smith"
+date: "04/06/2024"
+title: "PH889 Preliminary Results"
+format:
+  html:
+    toc: true
+    self-contained: true
+    embed-resources: true
+---
+
+## Load in Cleaned Data and Libraries
+
+```{r, message=FALSE}
+library(sjPlot)
+library(tidyverse)
+library(ggfortify)
+
+final <- read_csv("data/places_svi_and_fluoride_03262024.csv")
+```
+
+The cleaned data set includes percentile rankings for the four SVI domains (socioeconomic status, household characteristics, racial and ethnic minority status, and housing type and transportation), as well as the overall SVI, complete tooth loss, dental visits in the last year, and access to fluoridated water systems. 
+
+## Correlation Matrix
+
+Running a brief correlation test, we can see correlations between all variables. We see high correlations with the total SVI, which is to be expected. We can also see that dental visits is highly correlated with the dependent variable teeth lost. Most other correlations do not look concerning.
+
+```{r}
+final |> 
+  select(SES,        
+         HC,        
+         REMS,    
+         HTT, 
+         TOTAL,
+         DENTALVISITS,
+         TEETHLOST,
+         FLUORIDE) |> 
+  tab_corr(triangle = "upper")
+```
+
+## Examining Linear Relationships
+
+Brief graphing of the strong linear relationship between teeth lost and dental visits. FLuoride does not have this linear relationship.
+
+```{r}
+final |> 
+  ggplot(aes(TEETHLOST, DENTALVISITS)) +
+  geom_point()
+
+final |> 
+  ggplot(aes(TEETHLOST, FLUORIDE)) +
+  geom_point()
+
+```
+
+## Linear Regression
+
+Model results are shown below. All variables are included as independent except for the total SVI.
+
+Results show dental visits as the strongest predictor of teeth lost. SES and REMS were also fount significant and had a substantial impact on the outcome variable. HTT had a very small effect. HC was borderline significant but again a very small effect. FLuoride was nearly the same, a very small impact if any.
+
+```{r}
+model <- lm(TEETHLOST ~ DENTALVISITS + FLUORIDE +SES + HC + REMS + HTT, 
+   data = final)
+
+tab_model(model)
+
+plot_model(model) +
+  theme_minimal() 
+```
+
+
+## Model Diagnostics
+
+Residual vs. fitted appears to follow the horizontal line mostly. The shape does look a little like a pattern but seems mostly ok. Normal Q-Q looks good, mostly following the dashed line. Scale-Location does not look the best, the line is a bit curved. Residuals vs. Leverage appears ok, there are not many outliers that appear concerning.
+
+```{r}
+autoplot(model)
+
+car::vif(model)
+```
+
+## Map
+
+I included a descriptive map here to show the distribution of complete tooth loss percentile rankings in US counites.
+
+```{r, echo = F, message=FALSE}
+county_geo <- tigris::counties(cb = T, year = 2020, progress_bar = FALSE) |> 
+  select(STATEFP, GEOID, NAME, geometry)
+
+comb <- left_join(final, county_geo, by = c("FIPS" = "GEOID")) |> 
+  sf::st_as_sf()
+
+comb |> 
+  ggplot(aes(fill = TEETHLOST)) +
+  geom_sf(color = "gray70") +
+  theme_void(base_size = 14) +
+  theme(legend.position = "bottom") +
+  scale_fill_viridis_c() +
+  labs(title = "Figure 3: Complete tooth loss in those ≥65 (percentile rankings)") +
+  theme(plot.title.position = "plot",
+        plot.title = element_text(face = "bold"),
+        legend.key.width= unit(2.5, 'cm'))
+
+```
+
+## Future Directions
+
+I think it might be interesting to investigate which variables within the domains are most influential. Particularly in socioeconomic status. I am interested in the apparent protective effect of REMS as well. It may take time to pull those variables in and choose what to include in the model.
+
+I am also a bit concerned on interpretation and application. I used percentile rankings, but if I dive into specific variables, I could use the percentages for each variable. That might make interpretation easier. But then I will have to figure out a way to deal with the distribution of the data. With percentile rankings, the distribution is uniform. I am not sure if this is ok for standard linear regression. I am open to suggestions or guidance here.

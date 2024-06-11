@@ -22,9 +22,8 @@ county_geo <- tigris::counties(cb = T, year = 2020, progress_bar = FALSE) |>
   select(GEOID, geometry)
 ```
 
-## 
 
-### I have no financial support or conflicts of interest to report.
+#### I have no financial support or conflicts of interest to report.
 
 # Introduction
 

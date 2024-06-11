@@ -5,14 +5,17 @@ library(jsonlite)
 
 `%!in%` <- function(x,y)!('%in%' (x,y))
 
+
+
 SVI <- read_csv("data-raw/SVI_2020_US_county.csv") |> 
-  select(FIPS, SPL_THEME1, SPL_THEME2, SPL_THEME3, SPL_THEME4, SPL_THEMES) |> 
+  select(FIPS, RPL_THEME1, RPL_THEME2, RPL_THEME3, RPL_THEME4, RPL_THEMES,
+         EP_POV150, EP_UNEMP, EP_HBURD, EP_NOHSDP, EP_UNINSUR, EP_MINRTY) |> 
   rename(
-    SES = SPL_THEME1, 
-    HC = SPL_THEME2, 
-    REMS = SPL_THEME3, 
-    HTT = SPL_THEME4,
-    TOTAL = SPL_THEMES
+    SES = RPL_THEME1, 
+    HC = RPL_THEME2, 
+    REMS = RPL_THEME3, 
+    HTT = RPL_THEME4,
+    TOTAL = RPL_THEMES
   )
 
 # write_csv(SVI, "data/SVI_2020_clean.csv")
@@ -59,12 +62,11 @@ teethwide <- teeth_nogeo_c |>
   pivot_wider(id_cols = c(FIPS, datatype), names_from = measureid, values_from = c(data_value, high_cl, low_cl, year))
 
 
-teethwide |> 
-  select(data_value_TEETHLOST, data_value_DENTAL) |> 
-  sjPlot::tab_corr()
+# teethwide |> 
+#   select(data_value_TEETHLOST, data_value_DENTAL) |> 
+#   sjPlot::tab_corr()
 
 teeth_svi <- left_join(teethwide, SVI, by = "FIPS")
-
 
 
 # teeth_svi <- left_join(teeth_clean, SVI, by = "FIPS") |> 
@@ -220,18 +222,24 @@ teeth_svi_fluor <- left_join(fluor_fips, teeth_svi_age, by = "FIPS") |>
     DENTALVISITS = data_value_DENTAL
   ) |> 
   mutate(
-    TEETHLOST = percent_rank(TEETHLOST),
-    DENTALVISITS = percent_rank(DENTALVISITS),
-    FLUORIDE = percent_rank(perc_fluor),
-    SES = percent_rank(SES),
-    HC = percent_rank(HC),
-    REMS = percent_rank(REMS),
-    HTT = percent_rank(HTT),
-    TOTAL = percent_rank(TOTAL),
-    FIPS_num = as.numeric(FIPS)
+    TEETHLOST_pr = percent_rank(TEETHLOST),
+    DENTALVISITS_pr = percent_rank(DENTALVISITS),
+    FLUORIDE_pr = percent_rank(perc_fluor),
+    SES_pr = percent_rank(SES),
+    HC_pr = percent_rank(HC),
+    REMS_pr = percent_rank(REMS),
+    HTT_pr = percent_rank(HTT),
+    TOTAL_pr = percent_rank(TOTAL),
+    FIPS_num = as.numeric(FIPS),
+    POV150_pr  = percent_rank( EP_POV150) ,
+    UNEMP_pr  =  percent_rank(EP_UNEMP)   ,
+    HBURD_pr  =  percent_rank(EP_HBURD)  ,
+    NOHSDP_pr  = percent_rank( EP_NOHSDP) ,
+    UNINSU_pr  = percent_rank( EP_UNINSUR) ,
+    MINRTY_pr  = percent_rank(EP_MINRTY),
   )
 
-write_csv(teeth_svi_fluor, "data/places_svi_and_fluoride_03262024.csv")
+write_csv(teeth_svi_fluor, "data/places_svi_and_fluoride_06112024.csv")
 
 # stateabbr <- zctaCrosswalk::state_names |> 
 #   select(usps, fips_character)

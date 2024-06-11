@@ -1,0 +1,56 @@
+---
+title: "Complete tooth loss and social vulnerability among United States counties"
+author: "Brenden Smith, MPH"
+date: today
+format:
+  revealjs:
+    theme: simple
+    embed-resources: true
+---
+
+```{r}
+library(sjPlot)
+library(tidyverse)
+library(ggfortify)
+library(gtsummary)
+
+final <- read_csv("data/places_svi_and_fluoride_06112024.csv")
+
+county_geo <- tigris::counties(cb = T, year = 2020, progress_bar = FALSE) |> 
+  tigris::shift_geometry() |>
+  filter(STUSPS %in% state.abb) |>
+  select(GEOID, geometry)
+```
+
+## 
+
+### I have no financial support or conflicts of interest to report.
+
+# Introduction
+
+# Methodology
+
+# Results
+
+## 
+
+```{r, fig.width=24, fig.height=14}
+
+comb <- left_join(county_geo, final, by = c( "GEOID" =  "FIPS")) |> 
+  sf::st_as_sf()
+
+comb |> 
+  ggplot(aes(fill = TEETHLOST)) +
+  geom_sf(color = "gray70") +
+  theme_void(base_size = 32) +
+ # theme(legend.position = "bottom") +
+  scale_fill_viridis_c(labels = scales::percent_format(scale = 1)) +
+  labs(title = "% Complete tooth loss in those ≥65 (percentage)") +
+  theme(plot.title.position = "plot",
+        plot.title = element_text(face = "bold"),
+        legend.key.height = unit(2.5, 'cm'))
+
+```
+
+
+# Discussion
